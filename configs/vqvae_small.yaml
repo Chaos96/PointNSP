@@ -1,0 +1,22 @@
+model:
+  hidden_dim: 512
+  codebook_size: 4096
+  num_points: 2048
+  scale_points: [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]
+  pvcnn_layers: 4
+  voxel_resolution: 32
+
+training:
+  batch_size: 32
+  learning_rate: 1.0e-4
+  optimizer: adamw
+  weight_decay: 0.01
+  lr_schedule: cosine
+  num_epochs: 2000
+  num_points: 2048
+  save_every: 100
+
+data:
+  root_dir: data/ShapeNetCore.v2.PC15k
+  categories: ['airplane']
+  num_workers: 8
