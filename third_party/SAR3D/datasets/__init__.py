@@ -1,1 +1,0 @@
-from .g_buffer_objaverse import ChunkObjaverseDataset
