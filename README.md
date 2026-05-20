@@ -2,6 +2,8 @@
 
 A two-stage coarse-to-fine framework for high-quality 3D point cloud generation. Stage 1 learns multi-scale discrete representations via VQVAE; Stage 2 autoregressively predicts next-scale tokens via a causal transformer.
 
+![Three Different Point Cloud Generation Paradigms](src/paradigm.png)
+
 ## Dataset
 
 Download the ShapeNet point clouds (pre-sampled 15k points) from this [link](https://drive.google.com/drive/folders/1MMRp7mMvRj8-tORDaGTJvrAeCMYTWU2j) and place under `data/`:
