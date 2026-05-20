@@ -25,27 +25,26 @@ from .upsampling import punet_upsample
 def chamfer_distance(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """Bidirectional Chamfer Distance between two point clouds.
 
+    Uses torch.cdist for efficient batched computation.
+
     Args:
         x: (B, N, 3)
         y: (B, M, 3)
     Returns:
         Scalar mean CD loss.
     """
-    # (B, N, M)
-    xx = torch.sum(x ** 2, dim=2, keepdim=True)  # (B, N, 1)
-    yy = torch.sum(y ** 2, dim=2, keepdim=True)  # (B, M, 1)
-    xy = torch.bmm(x, y.transpose(1, 2))         # (B, N, M)
-    dist = xx + yy.transpose(1, 2) - 2.0 * xy    # (B, N, M)
-    dist = dist.clamp(min=0.0)
+    dist = torch.cdist(x, y)  # (B, N, M)
     min_x_to_y = dist.min(dim=2)[0]  # (B, N)
     min_y_to_x = dist.min(dim=1)[0]  # (B, M)
     return min_x_to_y.mean() + min_y_to_x.mean()
 
 
 def earth_movers_distance_approx(
-    x: torch.Tensor, y: torch.Tensor, n_iters: int = 50, reg: float = 0.01
+    x: torch.Tensor, y: torch.Tensor, n_iters: int = 50, reg: float = 0.05
 ) -> torch.Tensor:
     """Approximate Earth Mover's Distance via Sinkhorn algorithm.
+
+    Memory-efficient: processes per-sample.
 
     Args:
         x: (B, N, 3)
@@ -57,22 +56,21 @@ def earth_movers_distance_approx(
     """
     B, N, _ = x.shape
     M = y.shape[1]
+    emd = 0.0
 
-    # Cost matrix
-    xx = torch.sum(x ** 2, dim=2, keepdim=True)
-    yy = torch.sum(y ** 2, dim=2, keepdim=True)
-    cost = xx + yy.transpose(1, 2) - 2.0 * torch.bmm(x, y.transpose(1, 2))
-    cost = cost.clamp(min=0.0)
+    for i in range(B):
+        cost = torch.cdist(x[i:i+1], y[i:i+1]).squeeze(0)  # (N, M)
+        cost = cost.clamp(min=0.0)
 
-    # Sinkhorn iterations
-    K = torch.exp(-cost / reg)
-    u = torch.ones(B, N, 1, device=x.device) / N
-    for _ in range(n_iters):
-        v = 1.0 / (M * (K.transpose(1, 2) @ u + 1e-8))
-        u = 1.0 / (N * (K @ v + 1e-8))
-    T = u * K * v.transpose(1, 2)  # (B, N, M) transport plan
-    emd = (T * cost).sum(dim=(1, 2)).mean()
-    return emd
+        K = torch.exp(-cost / reg)
+        u = torch.ones(N, 1, device=x.device) / N
+        for _ in range(n_iters):
+            v = 1.0 / (M * (K.t() @ u + 1e-8))
+            u = 1.0 / (N * (K @ v + 1e-8))
+        T = u * K * v.t()  # (N, M)
+        emd += (T * cost).sum()
+
+    return emd / B
 
 
 # ---------------------------------------------------------------------------
@@ -366,7 +364,7 @@ class MultiScaleVQVAE(nn.Module):
         token_lists, vq_losses, _ = self.encode(x)
         x_hat = self.decode(token_lists)
 
-        # Reconstruction loss
+        # Reconstruction loss (Eq. 7): L_CD + L_EMD
         cd_loss = chamfer_distance(x, x_hat)
         emd_loss = earth_movers_distance_approx(x, x_hat)
         recon_loss = cd_loss + emd_loss

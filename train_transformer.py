@@ -98,6 +98,8 @@ def main():
         scale_points=vqvae_model_cfg.get("scale_points", [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]),
         pvcnn_layers=vqvae_model_cfg.get("pvcnn_layers", 4),
         voxel_resolution=vqvae_model_cfg.get("voxel_resolution", 32),
+        beta=vqvae_model_cfg.get("beta", 0.25),
+        phi_ratio=vqvae_model_cfg.get("phi_ratio", 0.5),
     ).to(device)
 
     ckpt = torch.load(args.vqvae_ckpt, map_location=device)

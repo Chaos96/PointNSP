@@ -3,7 +3,6 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import os
 import json
-import trimesh
 import urllib.request
 import zipfile
 from .shapenet_data_pc import ShapeNet15kPointClouds
@@ -42,6 +41,7 @@ class ShapeNetV2Dataset(Dataset):
 
         # Load the point cloud
         mesh_path = os.path.join(self.root_dir, synsetId, model_id, 'models', 'model_normalized.obj')
+        import trimesh
         mesh = trimesh.load(mesh_path)
         points = mesh.sample(self.num_points)
 

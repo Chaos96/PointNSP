@@ -54,6 +54,8 @@ def main():
         scale_points=model_cfg["scale_points"],
         pvcnn_layers=model_cfg.get("pvcnn_layers", 4),
         voxel_resolution=model_cfg.get("voxel_resolution", 32),
+        beta=model_cfg.get("beta", 0.25),
+        phi_ratio=model_cfg.get("phi_ratio", 0.5),
     ).to(device)
 
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")

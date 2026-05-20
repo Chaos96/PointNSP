@@ -4,7 +4,6 @@ import numpy as np
 from torch.utils.data import Dataset
 from torch.utils import data
 import random
-import open3d as o3d
 import numpy as np
 import torch.nn.functional as F
 
@@ -247,6 +246,7 @@ class PointCloudMasks(object):
 
     def __call__(self, points):
 
+        import open3d as o3d
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(points)
 
